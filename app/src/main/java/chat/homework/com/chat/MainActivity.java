@@ -69,8 +69,6 @@ public class MainActivity extends ActionBarActivity {
                 reader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
                 pWriter = new PrintWriter(new BufferedWriter(new OutputStreamWriter(socket.getOutputStream())),true);
                 String s = "";
-                String name1="";
-                String msg1="";
                 ImageButton ib=(ImageButton)findViewById(R.id.imageButton);
                 ib.setOnClickListener(new View.OnClickListener() {
                     @Override
@@ -78,7 +76,7 @@ public class MainActivity extends ActionBarActivity {
                         EditText text=(EditText)findViewById(R.id.editText);
                         String s=text.getText().toString();
                         if(!s.equals(""))
-                        pWriter.append(s);
+                        pWriter.write(s);
                         text.setText("");
                     }
                 });
