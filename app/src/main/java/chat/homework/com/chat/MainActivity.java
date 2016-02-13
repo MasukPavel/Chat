@@ -7,14 +7,19 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.EditText;
+import android.widget.ImageButton;
 import android.widget.LinearLayout;
 import android.widget.TableRow;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
+import java.io.PrintWriter;
 import java.net.Socket;
 
 
@@ -24,6 +29,7 @@ public class MainActivity extends ActionBarActivity {
      static boolean run=false;
     static ClientThread clientThread;
     static int count=0;
+    public static String name;
 
     @Override
     protected void onCreate(Bundle savedInstanceState){
@@ -42,6 +48,7 @@ public class MainActivity extends ActionBarActivity {
             TableRow tr = (TableRow) findViewById(R.id.tableRow);
             tr.setBackgroundColor(Color.GREEN);
             run = true;
+
         }
         }
 
@@ -49,6 +56,7 @@ public class MainActivity extends ActionBarActivity {
     class ClientThread implements Runnable {
         public Socket socket;
         private BufferedReader reader;
+        private PrintWriter pWriter;
         private boolean finished = false;
 
         private static final int SERVER_PORT = 4444;
@@ -59,20 +67,49 @@ public class MainActivity extends ActionBarActivity {
             try {
                 socket = new Socket(SERVER_IP, SERVER_PORT);
                 reader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+                pWriter = new PrintWriter(new BufferedWriter(new OutputStreamWriter(socket.getOutputStream())),true);
+                String s = "";
+                String name1="";
+                String msg1="";
+                ImageButton ib=(ImageButton)findViewById(R.id.imageButton);
+                ib.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        EditText text=(EditText)findViewById(R.id.editText);
+                        String s=text.getText().toString();
+                        if(!s.equals(""))
+                        pWriter.append(s);
+                        text.setText("");
+                    }
+                });
                 while (!finished) {
                     try {
-                        Thread.sleep(1000);
+                        Thread.sleep(100);
                         if(count>0)
-                            addNumber(getString());
+                            s = getString();
+
+                        if(!s.equals("")){
+                            addMsg(s);
+                        }
+
+
                         count++;
 
                     } catch (InterruptedException e) {
                         e.printStackTrace();
                     }
                 }
-                socket.close();
+
             } catch (IOException  e) {
                 e.printStackTrace();
+            }finally{
+                if(socket!=null){
+                    try {
+                        socket.close();
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                }
             }
         }
 
@@ -83,7 +120,12 @@ public class MainActivity extends ActionBarActivity {
         public String getString() throws IOException {
             if (reader.ready())
                 return reader.readLine();
-            return "No data";
+            return "no data";
+        }
+
+        public void write(){
+
+
         }
 
         public String getStringForce() throws IOException {
@@ -93,16 +135,16 @@ public class MainActivity extends ActionBarActivity {
 
     }
 
-    public void addNumber(String s){
+    public void addMsg(String s){
         final String s1=s;
         runOnUiThread(new Runnable() {
             @Override
             public void run() {
                 LinearLayout ll=(LinearLayout)findViewById(R.id.linlayout);
-                TextView number=new TextView(MainActivity.this);
-                number.setText(s1);
+                TextView msg=new TextView(MainActivity.this);
+                msg.setText(s1);
                 LinearLayout.LayoutParams lp=new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
-                ll.addView(number,lp);
+                ll.addView(msg,lp);
 
             }
         });
@@ -114,7 +156,7 @@ public class MainActivity extends ActionBarActivity {
     public void onDestroy() {
         super.onDestroy();
         try {
-            if(count>0)
+            if(clientThread.socket!=null)
             clientThread.socket.close();
         } catch (IOException e) {
             e.printStackTrace();
