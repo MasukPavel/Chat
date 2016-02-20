@@ -1,20 +1,14 @@
 package chat.homework.com.chat;
 
-import android.graphics.Color;
 import android.os.Bundle;
 import android.support.v7.app.ActionBarActivity;
-import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
-import android.view.ViewGroup;
 import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.LinearLayout;
-import android.widget.TableRow;
-import android.widget.TextView;
-import android.widget.Toast;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
@@ -23,18 +17,20 @@ import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.net.Socket;
+import java.util.ArrayList;
 
 
 public class MainActivity extends ActionBarActivity {
     private static final int SLEEP_TIME = 1000;
     private static final int READ_ATTEMPTS = 10;
-     static boolean run=false;
     static ClientThread clientThread;
     static int count=0;
     public static String name="";
     static String lastName="";
     static LinearLayout ll;
     static LayoutInflater inflator;
+    static ArrayList<String> names=new ArrayList<String>();
+    static int [] colorNumbers=new int[13];
 
     @Override
     protected void onCreate(Bundle savedInstanceState){
@@ -44,21 +40,26 @@ public class MainActivity extends ActionBarActivity {
         text.setMaxHeight(250);
         ll=(LinearLayout)findViewById(R.id.linlayout);
         inflator=getLayoutInflater();
-
+        names.add("Server");
+        colorNumbers[0]=0;
+        try {
+            onClick();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
-    public void onClick(View view) throws  InterruptedException,IOException{
-        if(run){
-            Toast.makeText(this,"it is already started",Toast.LENGTH_SHORT).show();
-        }else {
+    public void onClick() throws  InterruptedException,IOException{
+        for(int i=1;i<13;i++){
+            colorNumbers[i]=1+(int)(Math.random()*12);
+        }
+
             ClientThread clientThread = new ClientThread();
             Thread thread = new Thread(clientThread);
             thread.start();
-            TableRow tr = (TableRow) findViewById(R.id.tableRow);
-            tr.setBackgroundColor(Color.GREEN);
-            run = true;
 
-        }
         }
 
 
@@ -97,21 +98,15 @@ public class MainActivity extends ActionBarActivity {
                     try {
                         Thread.sleep(100);
                             s = getString();
-
+                        final String s1=s;
                         if(!s.equals("")){
                             if(s.contains(":")){
-                            if(s.substring(0,s.indexOf(":")).equals(name)) {
+                            if(getName(s).equals(name)) {
                                 addMsg(s,true);
                             }else{
-                                final String s1=s;
                                 addMsg(s, false);
                             }}else{
-                                if(name.equals("")) {
-                                    name = s.substring(6);
                                     addMsg(s, false);
-                                }else{
-                                    addMsg(s, false);
-                                }
                             }
                         }
 
@@ -159,48 +154,45 @@ public class MainActivity extends ActionBarActivity {
     }
 
     public void addMsg(String s,boolean isMy){
-        if(!s.contains(":")){
+        if(!s.contains(":") && name==""){
             s="Server: "+s;
+            name = s.substring(14);
         }
         final boolean isMy1=isMy;
         final String s1=s;
         runOnUiThread(new Runnable() {
             @Override
             public void run() {
-                String s2=s1;
-                TextView msg=new TextView(MainActivity.this);
+                String s1Name=getName(s1);
 
-                LinearLayout.LayoutParams lp=new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
-                if(isMy1) {
-                    msg.setBackgroundResource(R.drawable.my_message_2);
-                    lp.gravity = Gravity.RIGHT;
-                    lp.leftMargin=200;
-                    if(lastName.equals(name)) {
-                        lp.topMargin = 20;
-                    }else {
-                        lp.topMargin = 50;
-                        lastName=name;
-                    }
-                    s2=s2.substring(name.length()+2);
-                }else{
-                    msg.setBackgroundResource(R.drawable.message_2);
-                    lp.gravity = Gravity.LEFT;
-                    lp.rightMargin=200;
-                    if(lastName.equals(s2.substring(0,s2.indexOf(":")))) {
-                        lp.topMargin = 20;
-                    }else {
-                        lp.topMargin = 50;
-                        lastName=s2.substring(0,s2.indexOf(":"));
-                    }
+                if(names.indexOf(s1Name)==-1){
+                    names.add(s1Name);
                 }
-
-                msg.setText(s2);
-                ll.addView(msg,lp);
-
+                String s1Text=getText(s1);
+                MyMessage msg=new MyMessage(isMy1,s1Name,s1Text,getApplicationContext(),colorNumbers[names.indexOf(s1Name)]);
+                msg.addMessage();
             }
         });
 
     }
+
+
+    public String getName(String s){
+        if(s.contains(":"))
+        s=s.substring(0,s.indexOf(":"));
+        else
+        s="";
+        return s;
+    }
+
+    public String getText(String s){
+        if(s.contains(":"))
+            s=s.substring(s.indexOf(':')+2,s.length());
+        return s;
+    }
+
+
+
 
 
     @Override
